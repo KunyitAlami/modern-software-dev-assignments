@@ -15,3 +15,13 @@ def test_extract_action_items():
     assert "Ship it!" in items
 
 
+def test_extract_with_deadline():
+    text = "Finish report by Friday"
+    result = extract_action_items(text)
+    assert "Finish report by Friday" in result
+
+
+def test_extract_with_modal_verbs():
+    text = "We should fix this bug"
+    result = extract_action_items(text)
+    assert "We should fix this bug" in result
