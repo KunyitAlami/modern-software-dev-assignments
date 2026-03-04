@@ -22,3 +22,22 @@ def test_create_complete_list_and_patch_action_item(client):
     assert patched["description"] == "Updated"
 
 
+def test_create_action_item_with_note(client):
+    # create a note first
+    note_response = client.post(
+        "/notes/",
+        json={"title": "Test Note", "content": "Content"},
+    )
+    assert note_response.status_code == 201
+    note_id = note_response.json()["id"]
+
+    # create action item linked to note
+    response = client.post(
+        "/action-items/",
+        json={"description": "Linked task", "note_id": note_id},
+    )
+    assert response.status_code == 201
+    data = response.json()
+
+    assert data["note_id"] == note_id
+    assert data["description"] == "Linked task"
