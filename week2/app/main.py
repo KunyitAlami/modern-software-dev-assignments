@@ -11,7 +11,13 @@ from .db import init_db
 from .routers import action_items, notes
 from . import db
 
-init_db()
+app = FastAPI(title="Action Item Extractor")
+
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
+
 
 app = FastAPI(title="Action Item Extractor")
 

@@ -6,6 +6,11 @@ from ..db import get_db
 from ..models import ActionItem
 from ..schemas import ActionItemCreate, ActionItemRead
 
+from fastapi import Depends
+
+from backend.app.db import get_db
+from backend.app.models import ActionItem
+
 router = APIRouter(prefix="/action-items", tags=["action_items"])
 
 
@@ -34,3 +39,7 @@ def complete_item(item_id: int, db: Session = Depends(get_db)) -> ActionItemRead
     db.flush()
     db.refresh(item)
     return ActionItemRead.model_validate(item)
+
+@router.get("/completed")
+def list_completed_action_items(db: Session = Depends(get_db)):
+    return db.query(ActionItem).filter(ActionItem.completed == True).all()

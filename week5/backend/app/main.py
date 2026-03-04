@@ -1,8 +1,11 @@
 from pathlib import Path
 
-from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Request
+from fastapi.exceptions import HTTPException
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+
+from backend.app.utils.responses import error
 
 from .db import apply_seed_if_needed, engine
 from .models import Base
@@ -27,6 +30,17 @@ def startup_event() -> None:
 @app.get("/")
 async def root() -> FileResponse:
     return FileResponse("frontend/index.html")
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=error(
+            code="HTTP_ERROR",
+            message=exc.detail,
+        ),
+    )
 
 
 # Routers

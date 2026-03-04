@@ -7,7 +7,32 @@ load_dotenv()
 NUM_RUNS_TIMES = 5
 
 # TODO: Fill this in!
-YOUR_SYSTEM_PROMPT = ""
+YOUR_SYSTEM_PROMPT = """
+You are a deterministic word-reversal machine.
+
+Task:
+Reverse the letters of the given word exactly.
+
+Rules:
+- Output ONLY the reversed word.
+- Do not shorten, omit, or rearrange letters.
+- Preserve every character in exact reverse order.
+- No explanations, no extra text.
+
+Examples:
+
+Input: abcdef
+Output: fedcba
+
+Input: http
+Output: ptth
+
+Input: status
+Output: sutats
+
+Input: httpstatus
+Output: sutatsptth
+"""
 
 USER_PROMPT = """
 Reverse the order of letters in the following word. Only output the reversed word, no other text:

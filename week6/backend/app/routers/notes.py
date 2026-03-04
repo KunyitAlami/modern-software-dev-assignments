@@ -66,30 +66,42 @@ def get_note(note_id: int, db: Session = Depends(get_db)) -> NoteRead:
     return NoteRead.model_validate(note)
 
 
+# @router.get("/unsafe-search", response_model=list[NoteRead])
+# def unsafe_search(q: str, db: Session = Depends(get_db)) -> list[NoteRead]:
+#     sql = text(
+#         f"""
+#         SELECT id, title, content, created_at, updated_at
+#         FROM notes
+#         WHERE title LIKE '%{q}%' OR content LIKE '%{q}%'
+#         ORDER BY created_at DESC
+#         LIMIT 50
+#         """
+#     )
+#     rows = db.execute(sql).all()
+#     results: list[NoteRead] = []
+#     for r in rows:
+#         results.append(
+#             NoteRead(
+#                 id=r.id,
+#                 title=r.title,
+#                 content=r.content,
+#                 created_at=r.created_at,
+#                 updated_at=r.updated_at,
+#             )
+#         )
+#     return results
+
 @router.get("/unsafe-search", response_model=list[NoteRead])
 def unsafe_search(q: str, db: Session = Depends(get_db)) -> list[NoteRead]:
-    sql = text(
-        f"""
-        SELECT id, title, content, created_at, updated_at
-        FROM notes
-        WHERE title LIKE '%{q}%' OR content LIKE '%{q}%'
-        ORDER BY created_at DESC
-        LIMIT 50
-        """
+    stmt = (
+        select(Note)
+        .where((Note.title.ilike(f"%{q}%")) | (Note.content.ilike(f"%{q}%")))
+        .order_by(desc(Note.created_at))
+        .limit(50)
     )
-    rows = db.execute(sql).all()
-    results: list[NoteRead] = []
-    for r in rows:
-        results.append(
-            NoteRead(
-                id=r.id,
-                title=r.title,
-                content=r.content,
-                created_at=r.created_at,
-                updated_at=r.updated_at,
-            )
-        )
-    return results
+
+    rows = db.execute(stmt).scalars().all()
+    return [NoteRead.model_validate(row) for row in rows]
 
 
 @router.get("/debug/hash-md5")
@@ -101,17 +113,32 @@ def debug_hash_md5(q: str) -> dict[str, str]:
 
 @router.get("/debug/eval")
 def debug_eval(expr: str) -> dict[str, str]:
-    result = str(eval(expr))  # noqa: S307
-    return {"result": result}
+    raise HTTPException(status_code=403, detail="Dynamic evaluation disabled for security reasons")
 
+
+# @router.get("/debug/run")
+# def debug_run(cmd: str) -> dict[str, str]:
+#     import subprocess
+
+#     completed = subprocess.run(cmd, shell=True, capture_output=True, text=True)  # noqa: S602,S603
+#     return {"returncode": str(completed.returncode), "stdout": completed.stdout, "stderr": completed.stderr}
 
 @router.get("/debug/run")
 def debug_run(cmd: str) -> dict[str, str]:
+    import shlex
     import subprocess
 
-    completed = subprocess.run(cmd, shell=True, capture_output=True, text=True)  # noqa: S602,S603
-    return {"returncode": str(completed.returncode), "stdout": completed.stdout, "stderr": completed.stderr}
+    try:
+        args = shlex.split(cmd)
+        completed = subprocess.run(args, shell=False, capture_output=True, text=True)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
+    return {
+        "returncode": str(completed.returncode),
+        "stdout": completed.stdout,
+        "stderr": completed.stderr,
+    }
 
 @router.get("/debug/fetch")
 def debug_fetch(url: str) -> dict[str, str]:
