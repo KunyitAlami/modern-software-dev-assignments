@@ -41,3 +41,31 @@ def test_create_action_item_with_note(client):
 
     assert data["note_id"] == note_id
     assert data["description"] == "Linked task"
+
+def test_pagination_and_sorting(client):
+    # create multiple action items
+    for i in range(5):
+        client.post(
+            "/action-items/",
+            json={"description": f"Task {i}"},
+        )
+
+    # test limit
+    response = client.get("/action-items/?limit=2")
+    assert response.status_code == 200
+    assert len(response.json()) == 2
+
+    # test skip
+    response = client.get("/action-items/?skip=2")
+    assert response.status_code == 200
+    assert len(response.json()) == 3
+
+    # test ascending sort by created_at
+    response = client.get("/action-items/?sort=created_at")
+    data = response.json()
+    assert data[0]["created_at"] <= data[-1]["created_at"]
+
+    # test descending sort
+    response = client.get("/action-items/?sort=-created_at")
+    data = response.json()
+    assert data[0]["created_at"] >= data[-1]["created_at"]
